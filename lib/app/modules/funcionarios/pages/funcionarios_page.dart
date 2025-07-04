@@ -1,5 +1,6 @@
 // lib/app/modules/funcionarios/pages/funcionarios_page.dart
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -7,6 +8,8 @@ import 'package:flutter_modular/flutter_modular.dart';
 import '../../../theme/app_theme.dart';
 import '../stores/funcionarios_store.dart';
 import '../../../models/funcionario.dart';
+
+import 'package:http/http.dart' as http;
 
 class FuncionariosPage extends StatefulWidget {
   final int empresaId;
@@ -65,7 +68,8 @@ class _FuncionariosPageState extends State<FuncionariosPage> {
                   initialValue: store.newNome,
                   decoration: const InputDecoration(labelText: 'Nome'),
                   onChanged: (v) => store.newNome = v,
-                  validator: (v) => (v == null || v.isEmpty) ? 'Nome obrigatório' : null,
+                  validator: (v) =>
+                      (v == null || v.isEmpty) ? 'Nome obrigatório' : null,
                 ),
                 const SizedBox(height: 8),
                 // Matrícula
@@ -138,12 +142,36 @@ class _FuncionariosPageState extends State<FuncionariosPage> {
     );
   }
 
+  Future<void> _onImportPressed() async {
+    final res = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['csv', 'xlsx'],
+    );
+    if (res == null) return;
+    final file = res.files.single;
+    await store.importFile(widget.empresaId, file.bytes!, file.name);
+
+    // mostra resumo
+    final snack = 'Importados: ${store.importedCount}, '
+        'Atualizados: ${store.updatedCount}, '
+        'Erros: ${store.importErrors.length}';
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(snack)));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Funcionários'),
         backgroundColor: AppTheme.primary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.upload_file),
+            tooltip: 'Importar Excel',
+            onPressed: _onImportPressed,
+          ),
+          // ... export button ...
+        ],
       ),
       body: Column(
         children: [
@@ -167,7 +195,8 @@ class _FuncionariosPageState extends State<FuncionariosPage> {
                   return Center(
                     child: Text(
                       store.errorMessage!,
-                      style: TextStyle(color: Theme.of(context).colorScheme.error),
+                      style:
+                          TextStyle(color: Theme.of(context).colorScheme.error),
                     ),
                   );
                 }
@@ -187,7 +216,8 @@ class _FuncionariosPageState extends State<FuncionariosPage> {
                   itemBuilder: (_, i) {
                     final f = list[i];
                     return Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
                       elevation: 3,
                       child: ListTile(
                         title: Text(f.nome),
@@ -196,7 +226,8 @@ class _FuncionariosPageState extends State<FuncionariosPage> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.edit, color: AppTheme.accent),
+                              icon: const Icon(Icons.edit,
+                                  color: AppTheme.accent),
                               onPressed: () => _showForm(f: f),
                             ),
                             IconButton(

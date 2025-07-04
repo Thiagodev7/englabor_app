@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import '../../../utils/env.dart';
 
@@ -74,5 +75,20 @@ class FuncionariosService {
       return body['data'] as Map<String, dynamic>;
     }
     throw Exception(body['message'] ?? 'Erro ao atualizar funcionário');
+  }
+
+  Future<Map<String, dynamic>> importByEmpresa(int empresaId, Uint8List bytes, String filename) async {
+    final uri = Uri.parse('${Env.API_URL}/api/v1/funcionarios/import/$empresaId');
+    final req = http.MultipartRequest('POST', uri)
+      ..headers['x-api-key'] = Env.API_TOKEN
+      ..files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+
+    final streamed = await req.send();
+    final body = jsonDecode(await streamed.stream.bytesToString()) as Map<String, dynamic>;
+
+    if (streamed.statusCode == 200 && body['success'] == true) {
+      return body['data'] as Map<String, dynamic>;
+    }
+    throw Exception(body['message'] ?? 'Falha na importação');
   }
 }

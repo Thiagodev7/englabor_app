@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:mobx/mobx.dart';
 import '../services/funcionarios_service.dart';
 import '../../../models/funcionario.dart';
@@ -28,6 +30,35 @@ abstract class _FuncionariosStoreBase with Store {
   @observable String newSetor     = '';
   @observable String newGhe       = '';
   @observable String newCargo     = '';
+
+  // Adicione no store:
+@observable
+int importedCount = 0;
+
+@observable
+int updatedCount = 0;
+
+@observable
+ObservableList<Map<String, dynamic>> importErrors = ObservableList();
+
+@action
+Future<void> importFile(int widgetEmpresaId,Uint8List bytes, String filename) async {
+  loading = true;
+  errorMessage = null;
+  try {
+    final summary = await _service.importByEmpresa(widgetEmpresaId, bytes, filename);
+    importedCount = summary['inserted'] as int;
+    updatedCount  = summary['updated']  as int;
+    importErrors = ObservableList.of(
+  List<Map<String, dynamic>>.from(summary['errors'] as List)
+);
+    await loadByEmpresa(widgetEmpresaId);
+  } catch (e) {
+    errorMessage = e.toString().replaceFirst('Exception: ', '');
+  } finally {
+    loading = false;
+  }
+}
 
   @action
   Future<void> loadByEmpresa(int empresaId) async {
