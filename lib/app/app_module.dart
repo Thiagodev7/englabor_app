@@ -1,5 +1,6 @@
 // lib/app/app_module.dart
 
+import 'package:englabor_app/app/modules/equipamentos/equipamentos_module.dart';
 import 'package:englabor_app/app/modules/funcionarios/funcionarios_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -7,6 +8,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'modules/auth/auth_module.dart';
 import 'modules/home/home_module.dart';
 import 'modules/empresas/empresas_module.dart';
+import 'modules/medicoes/medicoes_module.dart';
 
 // serviços e stores globais
 import 'modules/auth/services/auth_service.dart';
@@ -24,6 +26,8 @@ class AppModule extends Module {
     ModuleRoute('/',      module: AuthModule()),
     ModuleRoute('/home',  module: HomeModule()),
     ModuleRoute('/empresas', module: EmpresasModule()),
-    ModuleRoute('/funcionarios', module: FuncionariosModule()), // ← aqui
+    ModuleRoute('/funcionarios', module: FuncionariosModule()),
+    ModuleRoute('/equipamentos', module: EquipamentosModule()),
+    ModuleRoute('/medicoes', module: MedicoesModule()),
   ];
 }

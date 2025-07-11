@@ -6,6 +6,7 @@ class Funcionario {
   final String cargo;
   final String matricula;
   final String nome;
+  final String medicaoStatus; // <-- novo campo
 
   Funcionario({
     required this.id,
@@ -15,6 +16,7 @@ class Funcionario {
     required this.cargo,
     required this.matricula,
     required this.nome,
+    required this.medicaoStatus,
   });
 
   factory Funcionario.fromJson(Map<String, dynamic> json) => Funcionario(
@@ -25,5 +27,6 @@ class Funcionario {
         cargo: json['cargo'] as String? ?? '',
         matricula: json['matricula'] as String? ?? '',
         nome: json['nome'] as String? ?? '',
+        medicaoStatus: json['medicao_status'] as String? ?? 'NENHUMA',
       );
 }

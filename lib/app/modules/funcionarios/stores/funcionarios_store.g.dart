@@ -161,6 +161,64 @@ mixin _$FuncionariosStore on _FuncionariosStoreBase, Store {
     });
   }
 
+  late final _$importedCountAtom =
+      Atom(name: '_FuncionariosStoreBase.importedCount', context: context);
+
+  @override
+  int get importedCount {
+    _$importedCountAtom.reportRead();
+    return super.importedCount;
+  }
+
+  @override
+  set importedCount(int value) {
+    _$importedCountAtom.reportWrite(value, super.importedCount, () {
+      super.importedCount = value;
+    });
+  }
+
+  late final _$updatedCountAtom =
+      Atom(name: '_FuncionariosStoreBase.updatedCount', context: context);
+
+  @override
+  int get updatedCount {
+    _$updatedCountAtom.reportRead();
+    return super.updatedCount;
+  }
+
+  @override
+  set updatedCount(int value) {
+    _$updatedCountAtom.reportWrite(value, super.updatedCount, () {
+      super.updatedCount = value;
+    });
+  }
+
+  late final _$importErrorsAtom =
+      Atom(name: '_FuncionariosStoreBase.importErrors', context: context);
+
+  @override
+  ObservableList<Map<String, dynamic>> get importErrors {
+    _$importErrorsAtom.reportRead();
+    return super.importErrors;
+  }
+
+  @override
+  set importErrors(ObservableList<Map<String, dynamic>> value) {
+    _$importErrorsAtom.reportWrite(value, super.importErrors, () {
+      super.importErrors = value;
+    });
+  }
+
+  late final _$importFileAsyncAction =
+      AsyncAction('_FuncionariosStoreBase.importFile', context: context);
+
+  @override
+  Future<void> importFile(
+      int widgetEmpresaId, Uint8List bytes, String filename) {
+    return _$importFileAsyncAction
+        .run(() => super.importFile(widgetEmpresaId, bytes, filename));
+  }
+
   late final _$loadByEmpresaAsyncAction =
       AsyncAction('_FuncionariosStoreBase.loadByEmpresa', context: context);
 
@@ -222,6 +280,9 @@ newMatricula: ${newMatricula},
 newSetor: ${newSetor},
 newGhe: ${newGhe},
 newCargo: ${newCargo},
+importedCount: ${importedCount},
+updatedCount: ${updatedCount},
+importErrors: ${importErrors},
 filtered: ${filtered}
     ''';
   }

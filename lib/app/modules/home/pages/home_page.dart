@@ -46,6 +46,13 @@ class HomePage extends StatelessWidget {
                 Modular.to.pushNamed('/empresas');
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.precision_manufacturing),
+              title: const Text('Equipamentos'),
+              onTap: () {
+                Modular.to.pushNamed('/equipamentos');
+              },
+            ),
             const Divider(),
             ListTile(
               leading: const Icon(Icons.logout),
@@ -68,20 +75,16 @@ class HomePage extends StatelessWidget {
               onTap: () => Modular.to.pushNamed('/empresas'),
             ),
             _FeatureCard(
-              icon: Icons.people,
-              label: 'Cooperados',
-              onTap: () {/* futuro */},
+              icon: Icons.precision_manufacturing,
+              label: 'Equipamentos',
+              onTap: () =>  Modular.to.pushNamed('/equipamentos'),
             ),
             _FeatureCard(
-              icon: Icons.receipt_long,
-              label: 'Votações',
-              onTap: () {/* futuro */},
+              icon: Icons.timeline,
+              label: 'Medições',
+              onTap: () => Modular.to.pushNamed('/medicoes'),
             ),
-            _FeatureCard(
-              icon: Icons.paid,
-              label: 'Financeiro',
-              onTap: () {/* futuro */},
-            ),
+            
           ],
         ),
       ),
