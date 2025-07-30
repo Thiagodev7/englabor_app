@@ -1,5 +1,9 @@
+// lib/app/modules/equipamentos/services/equipamentos_service.dart
+
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../../../utils/env.dart';
 
 class EquipamentosService {
@@ -11,7 +15,7 @@ class EquipamentosService {
       headers: {'x-api-key': Env.API_TOKEN},
     );
     final b = jsonDecode(r.body) as Map<String, dynamic>;
-    return List<Map<String, dynamic>>.from(b['data']);
+    return List<Map<String, dynamic>>.from(b['data'] as List);
   }
 
   Future<Map<String, dynamic>> create(Map<String, dynamic> dto) async {
@@ -24,7 +28,7 @@ class EquipamentosService {
       body: jsonEncode(dto),
     );
     final b = jsonDecode(r.body) as Map<String, dynamic>;
-    return b['data'];
+    return b['data'] as Map<String, dynamic>;
   }
 
   Future<Map<String, dynamic>> update(int id, Map<String, dynamic> dto) async {
@@ -37,7 +41,7 @@ class EquipamentosService {
       body: jsonEncode(dto),
     );
     final b = jsonDecode(r.body) as Map<String, dynamic>;
-    return b['data'];
+    return b['data'] as Map<String, dynamic>;
   }
 
   Future<void> delete(int id) async {
@@ -45,5 +49,29 @@ class EquipamentosService {
       Uri.parse('$_base/$id'),
       headers: {'x-api-key': Env.API_TOKEN},
     );
+  }
+
+  /// Importa um .xlsx de equipamentos
+  Future<Map<String, dynamic>> importFromExcel(Uint8List bytes, String filename) async {
+    final uri = Uri.parse('$_base/import');
+    final req = http.MultipartRequest('POST', uri)
+      ..headers['x-api-key'] = Env.API_TOKEN
+      ..files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: filename,
+          contentType: MediaType(
+            'application',
+            'vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          ),
+        ),
+      );
+    final streamed = await req.send();
+    final body = jsonDecode(await streamed.stream.bytesToString()) as Map<String, dynamic>;
+    if (streamed.statusCode == 200 && body['success'] == true) {
+      return body['data'] as Map<String, dynamic>;
+    }
+    throw Exception(body['message'] ?? 'Falha na importação');
   }
 }

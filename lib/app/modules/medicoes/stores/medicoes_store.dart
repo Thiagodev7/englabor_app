@@ -1,15 +1,18 @@
 // lib/app/modules/medicoes/stores/medicoes_store.dart
 
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:englabor_app/app/models/medicao.dart';
 import 'package:englabor_app/app/modules/auth/stores/auth_store.dart';
 import 'package:englabor_app/app/modules/equipamentos/services/equipamentos_service.dart';
-import 'package:englabor_app/app/utils/api_exception.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:mobx/mobx.dart';
-import 'package:flutter/material.dart';
-import '../services/medicoes_service.dart';
 import '../../empresas/services/empresas_service.dart';
 import '../../funcionarios/services/funcionarios_service.dart';
+import '../services/medicoes_service.dart';
+import '../../../utils/api_exception.dart';
+import 'package:signature/signature.dart';
 
 part 'medicoes_store.g.dart';
 
@@ -28,60 +31,16 @@ abstract class _MedicoesStore with Store {
     this._equipService,
   );
 
+  // --- listas para dropdowns e filtros ---
   @observable
   ObservableList<Map<String, dynamic>> empresas = ObservableList.of([]);
   @observable
   ObservableList<Map<String, dynamic>> funcionarios = ObservableList.of([]);
   @observable
-  bool loading = false;
-  @observable
-  String? error;
-  @observable
-  int? selectedEmpresaId;
-
-  // formulário
-  @observable
-  Medicao? currentMedicao;
-  @observable
   List<Map<String, dynamic>> equipList = [];
 
   @observable
-  int? equipamentoId;
-  @observable
-  DateTime? dataMedicao;
-  @observable
-  TimeOfDay? horaInicio;
-  @observable
-  TimeOfDay? horaFim;
-  @observable
-  TextEditingController tempoMostragemCtrl = TextEditingController();
-  @observable
-  TextEditingController nenQ5Ctrl = TextEditingController();
-  @observable
-  TextEditingController lavgQ5Ctrl = TextEditingController();
-  @observable
-  TextEditingController nenQ3Ctrl = TextEditingController();
-  @observable
-  TextEditingController lavgQ3Ctrl = TextEditingController();
-  @observable
-  TextEditingController calibInicialCtrl = TextEditingController();
-  @observable
-  TextEditingController calibFinalCtrl = TextEditingController();
-  @observable
-  TextEditingController desvioCtrl = TextEditingController();
-  @observable
-  TextEditingController tempoPausaCtrl = TextEditingController();
-  @observable
-  TimeOfDay? inicioPausa;
-  @observable
-  TimeOfDay? finalPausa;
-  @observable
-  TextEditingController jornadaCtrl = TextEditingController();
-  @observable
-  TextEditingController obsCtrl = TextEditingController();
-
-  @observable
-  List<FieldError>? fieldErrors;
+  int? selectedEmpresaId;
 
   @action
   Future<void> loadEmpresas() async {
@@ -112,13 +71,91 @@ abstract class _MedicoesStore with Store {
     }
   }
 
+  // --- estado geral ---
+  @observable
+  bool loading = false;
+  @observable
+  String? error;
+  @observable
+  List<FieldError>? fieldErrors;
+  @observable
+  Medicao? currentMedicao;
+
+  // --- campos do formulário ---
+  @observable
+  int? equipamentoId;
+  @observable
+  DateTime? dataMedicao;
+  @observable
+  TimeOfDay? horaInicio;
+  @observable
+  TimeOfDay? horaFim;
+  @observable
+  TimeOfDay? horaCalibracaoInicio;
+  @observable
+  TimeOfDay? horaCalibracaoFim;
+
+  @observable
+  TextEditingController tempoMostragemCtrl = TextEditingController();
+  @observable
+  TextEditingController nenQ5Ctrl = TextEditingController();
+  @observable
+  TextEditingController lavgQ5Ctrl = TextEditingController();
+  @observable
+  TextEditingController nenQ3Ctrl = TextEditingController();
+  @observable
+  TextEditingController lavgQ3Ctrl = TextEditingController();
+  @observable
+  TextEditingController calibInicialCtrl = TextEditingController();
+  @observable
+  TextEditingController calibFinalCtrl = TextEditingController();
+  @observable
+  TextEditingController desvioCtrl = TextEditingController();
+  @observable
+  TextEditingController tempoPausaCtrl = TextEditingController();
+  @observable
+  TextEditingController jornadaCtrl = TextEditingController();
+  @observable
+  TextEditingController obsCtrl = TextEditingController();
+
+  @observable
+  TimeOfDay? inicioPausa;
+  @observable
+  TimeOfDay? finalPausa;
+
+  // --- novo campo de foto ---
+  @observable
+  String? foto; // base64 ou URL
+
+  @observable
+  Uint8List? assinaturaBytes;
+
+    
+  final SignatureController assinaturaCtrl = SignatureController(
+    penStrokeWidth: 2,
+    penColor: Colors.black,
+    exportBackgroundColor: Colors.white,
+  );
+
+  @action
+  Future<void> salvarAssinatura() async {
+    if (assinaturaCtrl.isNotEmpty) {
+      final img = await assinaturaCtrl.toPngBytes();
+      if (img != null) assinaturaBytes = img;
+    }
+  }
+
+  @action
+  void setFoto(String b64) => foto = b64;
+
+  // --- carregamento de equipamentos ---
   @action
   Future<void> loadEquipamentos() async {
     loading = true;
     error = null;
     try {
-      final list = await _equipService.list(); // ← use a instância injetada
-      equipList = ObservableList.of(list);
+      final list = await _equipService.list();
+      equipList = list;
     } catch (e) {
       error = e.toString();
     } finally {
@@ -126,6 +163,7 @@ abstract class _MedicoesStore with Store {
     }
   }
 
+  // --- inicializa a edição/criação de medição para um funcionário ---
   @action
   Future<void> initMedicao(int funcId) async {
     loading = true;
@@ -134,15 +172,13 @@ abstract class _MedicoesStore with Store {
       final meds = await _medService.listByFuncionario(funcId);
       if (meds.isNotEmpty) {
         currentMedicao = Medicao.fromJson(meds.first);
-        // preenche campos
+        // popula campos
         equipamentoId = currentMedicao!.equipamentoId;
         dataMedicao = currentMedicao!.dataMedicao;
-        horaInicio = currentMedicao!.horaInicio != null
-            ? _parseTime(currentMedicao!.horaInicio!)
-            : null;
-        horaFim = currentMedicao!.horaFim != null
-            ? _parseTime(currentMedicao!.horaFim!)
-            : null;
+        horaInicio = _parseTime(currentMedicao!.horaInicio);
+        horaFim = _parseTime(currentMedicao!.horaFim);
+        horaCalibracaoInicio = _parseTime(currentMedicao!.horaCalibracaoInicio);
+        horaCalibracaoFim = _parseTime(currentMedicao!.horaCalibracaoFim);
         tempoMostragemCtrl.text = currentMedicao!.tempoMostragem ?? '';
         nenQ5Ctrl.text = currentMedicao!.nenQ5?.toString() ?? '';
         lavgQ5Ctrl.text = currentMedicao!.lavgQ5?.toString() ?? '';
@@ -153,14 +189,11 @@ abstract class _MedicoesStore with Store {
         calibFinalCtrl.text = currentMedicao!.calibracaoFinal?.toString() ?? '';
         desvioCtrl.text = currentMedicao!.desvio?.toString() ?? '';
         tempoPausaCtrl.text = currentMedicao!.tempoPausa ?? '';
-        inicioPausa = currentMedicao!.inicioPausa != null
-            ? _parseTime(currentMedicao!.inicioPausa!)
-            : null;
-        finalPausa = currentMedicao!.finalPausa != null
-            ? _parseTime(currentMedicao!.finalPausa!)
-            : null;
+        inicioPausa = _parseTime(currentMedicao!.inicioPausa);
+        finalPausa = _parseTime(currentMedicao!.finalPausa);
         jornadaCtrl.text = currentMedicao!.jornadaTrabalho ?? '';
         obsCtrl.text = currentMedicao!.observacao ?? '';
+        foto = currentMedicao!.foto_base64;
       } else {
         currentMedicao = null;
       }
@@ -171,22 +204,44 @@ abstract class _MedicoesStore with Store {
     }
   }
 
-  TimeOfDay _parseTime(String s) {
+  TimeOfDay? _parseTime(String? s) {
+    if (s == null) return null;
     final parts = s.split(':').map(int.parse).toList();
     return TimeOfDay(hour: parts[0], minute: parts[1]);
   }
 
-  String? _formatTimeOfDay(TimeOfDay? t) {
+  String? _formatTime(TimeOfDay? t) {
     if (t == null) return null;
     final h = t.hour.toString().padLeft(2, '0');
     final m = t.minute.toString().padLeft(2, '0');
-    return '$h:$m';
+    return '$h:$m:00';
   }
 
+  // setters para horários
+  @action
+  void setHoraInicio(TimeOfDay t) => horaInicio = t;
+  @action
+  void setHoraFim(TimeOfDay t) => horaFim = t;
+  @action
+  void setInicioPausa(TimeOfDay t) => inicioPausa = t;
+  @action
+  void setFinalPausa(TimeOfDay t) => finalPausa = t;
+  @action
+  void setHoraCalibracaoInicio(TimeOfDay t) => horaCalibracaoInicio = t;
+  @action
+  void setHoraCalibracaoFim(TimeOfDay t) => horaCalibracaoFim = t;
+
+  // cálculo de pausa e mostragem (idem ao anterior)
+  void _updateTempoPausa() {/* ... */}
+  void _updateTempoMostragem() {/* ... */}
+
+  // --- submete criação/atualização ---
   @action
   Future<void> submit(int funcId, String status) async {
     loading = true;
     error = null;
+    fieldErrors = null;
+
     final dto = Medicao(
       id: currentMedicao?.id,
       funcionarioId: funcId,
@@ -194,10 +249,11 @@ abstract class _MedicoesStore with Store {
       avaliadorId: Modular.get<AuthStore>().user!.id,
       status: status,
       dataMedicao: dataMedicao,
-      horaInicio: _formatTimeOfDay(horaInicio),
-      horaFim: _formatTimeOfDay(horaFim),
-      tempoMostragem:
-          tempoMostragemCtrl.text.isNotEmpty ? tempoMostragemCtrl.text : null,
+      horaInicio: _formatTime(horaInicio),
+      horaFim: _formatTime(horaFim),
+      tempoMostragem: tempoMostragemCtrl.text,
+      tempoPausa: tempoPausaCtrl.text,
+      jornadaTrabalho: jornadaCtrl.text.isNotEmpty ? jornadaCtrl.text : null,
       nenQ5: nenQ5Ctrl.text.isNotEmpty ? double.parse(nenQ5Ctrl.text) : null,
       lavgQ5: lavgQ5Ctrl.text.isNotEmpty ? double.parse(lavgQ5Ctrl.text) : null,
       nenQ3: nenQ3Ctrl.text.isNotEmpty ? double.parse(nenQ3Ctrl.text) : null,
@@ -208,12 +264,16 @@ abstract class _MedicoesStore with Store {
       calibracaoFinal: calibFinalCtrl.text.isNotEmpty
           ? double.parse(calibFinalCtrl.text)
           : null,
+      horaCalibracaoInicio: _formatTime(horaCalibracaoInicio),
+      horaCalibracaoFim: _formatTime(horaCalibracaoFim),
       desvio: desvioCtrl.text.isNotEmpty ? double.parse(desvioCtrl.text) : null,
-      tempoPausa: tempoPausaCtrl.text.isNotEmpty ? tempoPausaCtrl.text : null,
-      inicioPausa: _formatTimeOfDay(inicioPausa),
-      finalPausa: _formatTimeOfDay(finalPausa),
-      jornadaTrabalho: jornadaCtrl.text.isNotEmpty ? jornadaCtrl.text : null,
+      inicioPausa: _formatTime(inicioPausa),
+      finalPausa: _formatTime(finalPausa),
       observacao: obsCtrl.text.isNotEmpty ? obsCtrl.text : null,
+      foto_base64: foto,
+      assinaturaBase64: assinaturaBytes != null
+      ? base64Encode(assinaturaBytes!)
+      : null,
     ).toJson();
 
     try {
@@ -222,86 +282,70 @@ abstract class _MedicoesStore with Store {
       } else {
         await _medService.update(currentMedicao!.id!, dto);
       }
-      await selectEmpresa(selectedEmpresaId!);
+      // após sucesso, recarrega lista de funcionários da empresa atual
+      if (selectedEmpresaId != null) {
+        await selectEmpresa(selectedEmpresaId!);
+      }
     } on ApiException catch (e) {
       error = e.message;
-      fieldErrors = e.errors; // seta os erros de campo vindos da API
-    } catch (e) {
+      fieldErrors = e.errors;
+    } catch (_) {
       error = 'Erro inesperado. Tente novamente.';
     } finally {
       loading = false;
     }
   }
 
-  @action
-  void resetForm() {
-    // Dispose e recria cada TextEditingController
-    try {
-      tempoMostragemCtrl.dispose();
-    } catch (_) {}
-    tempoMostragemCtrl = TextEditingController();
-
-    try {
-      nenQ5Ctrl.dispose();
-    } catch (_) {}
-    nenQ5Ctrl = TextEditingController();
-
-    try {
-      lavgQ5Ctrl.dispose();
-    } catch (_) {}
-    lavgQ5Ctrl = TextEditingController();
-
-    try {
-      nenQ3Ctrl.dispose();
-    } catch (_) {}
-    nenQ3Ctrl = TextEditingController();
-
-    try {
-      lavgQ3Ctrl.dispose();
-    } catch (_) {}
-    lavgQ3Ctrl = TextEditingController();
-
-    try {
-      calibInicialCtrl.dispose();
-    } catch (_) {}
-    calibInicialCtrl = TextEditingController();
-
-    try {
-      calibFinalCtrl.dispose();
-    } catch (_) {}
-    calibFinalCtrl = TextEditingController();
-
-    try {
-      desvioCtrl.dispose();
-    } catch (_) {}
-    desvioCtrl = TextEditingController();
-
-    try {
-      tempoPausaCtrl.dispose();
-    } catch (_) {}
-    tempoPausaCtrl = TextEditingController();
-
-    try {
-      jornadaCtrl.dispose();
-    } catch (_) {}
-    jornadaCtrl = TextEditingController();
-
-    try {
-      obsCtrl.dispose();
-    } catch (_) {}
-    obsCtrl = TextEditingController();
-
-    // Zera todos os campos “simples”
-    equipamentoId = null;
-    dataMedicao = null;
-    horaInicio = null;
-    horaFim = null;
-    inicioPausa = null;
-    finalPausa = null;
-
-    // Se houver uma medição corrente, limpa-a
-    currentMedicao = null;
+@action
+void resetForm() {
+  // 1) Dispose dos controllers que *podem* ser reatribuídos
+  for (final ctrl in [
+    tempoMostragemCtrl,
+    nenQ5Ctrl,
+    lavgQ5Ctrl,
+    nenQ3Ctrl,
+    lavgQ3Ctrl,
+    calibInicialCtrl,
+    calibFinalCtrl,
+    desvioCtrl,
+    tempoPausaCtrl,
+    jornadaCtrl,
+    obsCtrl,
+  ]) {
+    ctrl.dispose();
   }
+
+  // 2) Recriação desses mesmos controllers
+  tempoMostragemCtrl = TextEditingController();
+  nenQ5Ctrl          = TextEditingController();
+  lavgQ5Ctrl         = TextEditingController();
+  nenQ3Ctrl          = TextEditingController();
+  lavgQ3Ctrl         = TextEditingController();
+  calibInicialCtrl   = TextEditingController();
+  calibFinalCtrl     = TextEditingController();
+  desvioCtrl         = TextEditingController();
+  tempoPausaCtrl     = TextEditingController();
+  jornadaCtrl        = TextEditingController();
+  obsCtrl            = TextEditingController();
+
+  //3) Limpeza especial do assinaturaCtrl, que é final
+  assinaturaCtrl.clear();
+  assinaturaBytes = null;
+
+  // 4) Zerar variáveis de estado
+  equipamentoId           = null;
+  dataMedicao             = null;
+  horaInicio              = null;
+  horaFim                 = null;
+  inicioPausa             = null;
+  finalPausa              = null;
+  horaCalibracaoInicio    = null;
+  horaCalibracaoFim       = null;
+  foto                    = null;
+  currentMedicao          = null;
+  fieldErrors             = null;
+  error                   = null;
+}
 
   void disposeForm() {
     tempoMostragemCtrl.dispose();

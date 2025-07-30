@@ -1,5 +1,9 @@
+// lib/app/modules/equipamentos/stores/equipamentos_store.dart
+
+import 'dart:typed_data';
 import 'package:mobx/mobx.dart';
 import '../services/equipamentos_service.dart';
+
 part 'equipamentos_store.g.dart';
 
 class EquipamentosStore = _EquipamentosStore with _$EquipamentosStore;
@@ -9,23 +13,51 @@ abstract class _EquipamentosStore with Store {
   _EquipamentosStore(this._service);
 
   @observable
-  bool loading = false;
-  @observable
-  String? error;
-  @observable
   ObservableList<Map<String, dynamic>> items = ObservableList.of([]);
 
-  // form fields
-  @observable String tipo = '';
-  @observable String marca = '';
-  @observable String modelo = '';
-  @observable String numeroSerie = '';
-  @observable DateTime? dataUltimaCalibracao;
-  @observable String numeroCertificado = '';
-  @observable DateTime? dataVencimento;
+  @observable
+  bool loading = false;
 
-  @observable int? editingId;
-  @observable String? formError;
+  @observable
+  String? error;
+
+  // campos do formulário
+  @observable
+  String tipo = '';
+
+  @observable
+  String marca = '';
+
+  @observable
+  String modelo = '';
+
+  @observable
+  String numeroSerie = '';
+
+  @observable
+  DateTime? dataUltimaCalibracao;
+
+  @observable
+  String numeroCertificado = '';
+
+  @observable
+  DateTime? dataVencimento;
+
+  @observable
+  int? editingId;
+
+  @observable
+  String? formError;
+
+  // resumo de importação
+  @observable
+  int importedCount = 0;
+
+  @observable
+  int updatedCount = 0;
+
+  @observable
+  ObservableList<Map<String, dynamic>> importErrors = ObservableList.of([]);
 
   @action
   Future<void> loadAll() async {
@@ -44,7 +76,6 @@ abstract class _EquipamentosStore with Store {
   @action
   void setEditing(Map<String, dynamic>? eq) {
     if (eq == null) {
-      // novo
       tipo = '';
       marca = '';
       modelo = '';
@@ -54,14 +85,13 @@ abstract class _EquipamentosStore with Store {
       dataVencimento = null;
       editingId = null;
     } else {
-      // editar
       tipo = eq['tipo'] as String? ?? '';
       marca = eq['marca'] as String? ?? '';
       modelo = eq['modelo'] as String? ?? '';
       numeroSerie = eq['numero_serie'] as String? ?? '';
-      dataUltimaCalibracao = DateTime.parse(eq['data_ultima_calibracao'] as String);
+      dataUltimaCalibracao = DateTime.tryParse(eq['data_ultima_calibracao'] as String) ?? DateTime.now();
       numeroCertificado = eq['numero_certificado'] as String? ?? '';
-      dataVencimento = DateTime.parse(eq['data_vencimento'] as String);
+      dataVencimento = DateTime.tryParse(eq['data_vencimento'] as String) ?? DateTime.now();
       editingId = eq['id'] as int?;
     }
     formError = null;
@@ -72,7 +102,6 @@ abstract class _EquipamentosStore with Store {
     loading = true;
     formError = null;
     try {
-      // validações básicas
       if (tipo.isEmpty || marca.isEmpty || modelo.isEmpty) {
         throw Exception('Tipo, marca e modelo são obrigatórios.');
       }
@@ -102,5 +131,24 @@ abstract class _EquipamentosStore with Store {
   Future<void> deleteItem(int id) async {
     await _service.delete(id);
     await loadAll();
+  }
+
+  @action
+  Future<void> importFile(Uint8List bytes, String filename) async {
+    loading = true;
+    error = null;
+    try {
+      final summary = await _service.importFromExcel(bytes, filename);
+      importedCount = summary['inserted'] as int;
+      updatedCount = summary['updated'] as int;
+      importErrors = ObservableList.of(
+        List<Map<String, dynamic>>.from(summary['errors'] as List),
+      );
+      await loadAll();
+    } catch (e) {
+      error = e.toString().replaceFirst('Exception: ', '');
+    } finally {
+      loading = false;
+    }
   }
 }

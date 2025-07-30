@@ -21,6 +21,11 @@ class LoginPage extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  Image.asset(
+                    'assets/images/higiene.jpeg',
+                    width: MediaQuery.of(context).size.width * 0.8,
+                  ),
+                  SizedBox(height: 24),
                   // Logo
                   Image.asset(
                     'assets/images/logo.png',

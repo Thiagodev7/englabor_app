@@ -9,6 +9,22 @@ part of 'equipamentos_store.dart';
 // ignore_for_file: non_constant_identifier_names, unnecessary_brace_in_string_interps, unnecessary_lambdas, prefer_expression_function_bodies, lines_longer_than_80_chars, avoid_as, avoid_annotating_with_dynamic, no_leading_underscores_for_local_identifiers
 
 mixin _$EquipamentosStore on _EquipamentosStore, Store {
+  late final _$itemsAtom =
+      Atom(name: '_EquipamentosStore.items', context: context);
+
+  @override
+  ObservableList<Map<String, dynamic>> get items {
+    _$itemsAtom.reportRead();
+    return super.items;
+  }
+
+  @override
+  set items(ObservableList<Map<String, dynamic>> value) {
+    _$itemsAtom.reportWrite(value, super.items, () {
+      super.items = value;
+    });
+  }
+
   late final _$loadingAtom =
       Atom(name: '_EquipamentosStore.loading', context: context);
 
@@ -38,22 +54,6 @@ mixin _$EquipamentosStore on _EquipamentosStore, Store {
   set error(String? value) {
     _$errorAtom.reportWrite(value, super.error, () {
       super.error = value;
-    });
-  }
-
-  late final _$itemsAtom =
-      Atom(name: '_EquipamentosStore.items', context: context);
-
-  @override
-  ObservableList<Map<String, dynamic>> get items {
-    _$itemsAtom.reportRead();
-    return super.items;
-  }
-
-  @override
-  set items(ObservableList<Map<String, dynamic>> value) {
-    _$itemsAtom.reportWrite(value, super.items, () {
-      super.items = value;
     });
   }
 
@@ -202,6 +202,54 @@ mixin _$EquipamentosStore on _EquipamentosStore, Store {
     });
   }
 
+  late final _$importedCountAtom =
+      Atom(name: '_EquipamentosStore.importedCount', context: context);
+
+  @override
+  int get importedCount {
+    _$importedCountAtom.reportRead();
+    return super.importedCount;
+  }
+
+  @override
+  set importedCount(int value) {
+    _$importedCountAtom.reportWrite(value, super.importedCount, () {
+      super.importedCount = value;
+    });
+  }
+
+  late final _$updatedCountAtom =
+      Atom(name: '_EquipamentosStore.updatedCount', context: context);
+
+  @override
+  int get updatedCount {
+    _$updatedCountAtom.reportRead();
+    return super.updatedCount;
+  }
+
+  @override
+  set updatedCount(int value) {
+    _$updatedCountAtom.reportWrite(value, super.updatedCount, () {
+      super.updatedCount = value;
+    });
+  }
+
+  late final _$importErrorsAtom =
+      Atom(name: '_EquipamentosStore.importErrors', context: context);
+
+  @override
+  ObservableList<Map<String, dynamic>> get importErrors {
+    _$importErrorsAtom.reportRead();
+    return super.importErrors;
+  }
+
+  @override
+  set importErrors(ObservableList<Map<String, dynamic>> value) {
+    _$importErrorsAtom.reportWrite(value, super.importErrors, () {
+      super.importErrors = value;
+    });
+  }
+
   late final _$loadAllAsyncAction =
       AsyncAction('_EquipamentosStore.loadAll', context: context);
 
@@ -226,6 +274,14 @@ mixin _$EquipamentosStore on _EquipamentosStore, Store {
     return _$deleteItemAsyncAction.run(() => super.deleteItem(id));
   }
 
+  late final _$importFileAsyncAction =
+      AsyncAction('_EquipamentosStore.importFile', context: context);
+
+  @override
+  Future<void> importFile(Uint8List bytes, String filename) {
+    return _$importFileAsyncAction.run(() => super.importFile(bytes, filename));
+  }
+
   late final _$_EquipamentosStoreActionController =
       ActionController(name: '_EquipamentosStore', context: context);
 
@@ -243,9 +299,9 @@ mixin _$EquipamentosStore on _EquipamentosStore, Store {
   @override
   String toString() {
     return '''
+items: ${items},
 loading: ${loading},
 error: ${error},
-items: ${items},
 tipo: ${tipo},
 marca: ${marca},
 modelo: ${modelo},
@@ -254,7 +310,10 @@ dataUltimaCalibracao: ${dataUltimaCalibracao},
 numeroCertificado: ${numeroCertificado},
 dataVencimento: ${dataVencimento},
 editingId: ${editingId},
-formError: ${formError}
+formError: ${formError},
+importedCount: ${importedCount},
+updatedCount: ${updatedCount},
+importErrors: ${importErrors}
     ''';
   }
 }

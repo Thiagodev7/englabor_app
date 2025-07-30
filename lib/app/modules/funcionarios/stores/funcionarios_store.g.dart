@@ -161,6 +161,22 @@ mixin _$FuncionariosStore on _FuncionariosStoreBase, Store {
     });
   }
 
+  late final _$fieldErrorsAtom =
+      Atom(name: '_FuncionariosStoreBase.fieldErrors', context: context);
+
+  @override
+  ObservableList<FieldError> get fieldErrors {
+    _$fieldErrorsAtom.reportRead();
+    return super.fieldErrors;
+  }
+
+  @override
+  set fieldErrors(ObservableList<FieldError> value) {
+    _$fieldErrorsAtom.reportWrite(value, super.fieldErrors, () {
+      super.fieldErrors = value;
+    });
+  }
+
   late final _$importedCountAtom =
       Atom(name: '_FuncionariosStoreBase.importedCount', context: context);
 
@@ -258,6 +274,17 @@ mixin _$FuncionariosStore on _FuncionariosStoreBase, Store {
       ActionController(name: '_FuncionariosStoreBase', context: context);
 
   @override
+  void clearForm() {
+    final _$actionInfo = _$_FuncionariosStoreBaseActionController.startAction(
+        name: '_FuncionariosStoreBase.clearForm');
+    try {
+      return super.clearForm();
+    } finally {
+      _$_FuncionariosStoreBaseActionController.endAction(_$actionInfo);
+    }
+  }
+
+  @override
   void setSearch(String q) {
     final _$actionInfo = _$_FuncionariosStoreBaseActionController.startAction(
         name: '_FuncionariosStoreBase.setSearch');
@@ -280,6 +307,7 @@ newMatricula: ${newMatricula},
 newSetor: ${newSetor},
 newGhe: ${newGhe},
 newCargo: ${newCargo},
+fieldErrors: ${fieldErrors},
 importedCount: ${importedCount},
 updatedCount: ${updatedCount},
 importErrors: ${importErrors},
